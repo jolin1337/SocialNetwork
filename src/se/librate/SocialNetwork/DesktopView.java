@@ -13,8 +13,6 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.util.AttributeSet;
-import android.view.DragEvent;
-import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -66,6 +64,13 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
             setOnTouchListener(DesktopView.this); 
             //setOnClickListener(DesktopView.this);
             //setOnDragListener(DesktopView.this);
+            
+            items.add(new Contact(1, 20, 10));
+            items.add(new Contact(2, 200, 300));
+            items.add(new Contact("Bertil", 3, 10, 250));
+            items.add(new Contact(4, 170, 400));
+            updateBoundaries();
+
             render();
             //desktopViewLoop.setRunning(true);
             //desktopViewLoop.start();
@@ -87,12 +92,6 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
         
         Contact.defaultProfileImage = BitmapFactory.decodeResource(getResources(), R.drawable.profile_image);
         
-        items.add(new Contact(1, 20, 10));
-        items.add(new Contact(2, 200, 300));
-        items.add(new Contact("Bertil", 3, 10, 250));
-        items.add(new Contact(4, 170, 400));
-        updateBoundaries();
-        updateBoundaries();
     }
     public DesktopView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -132,19 +131,20 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
         paint.setStyle(Paint.Style.STROKE);
         canvas.translate(realPanX, realPanY);
         // Draw the boundary of the items displayed on the canvas
-        //canvas.drawRect(boundary, paint);
+        canvas.drawRect(boundary, paint);
         paint.setColor(Color.BLUE);
         canvas.drawRect(maxBoundary, paint);
         canvas.translate(-realPanX, -realPanY);
         
-        renderItems(canvas, realPanX, realPanY);
+        renderItems(canvas, realPanX, realPanY, isOverview);
         // If circle was activated
         if(isOverview) {
+            canvas.translate(-panX, -panY);
+            moa.renderCircle(canvas);
             canvas.restore();
         }
-        //else
-       
-        moa.renderCircle(canvas);
+        else
+            moa.renderCircle(canvas);
         super.onDraw(canvas);
     }
     
@@ -152,14 +152,19 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
     public boolean onTouch(View v, MotionEvent e) {
         if(moa.isOverview()) {
             boolean res = moa.onTouch(v, e);
+            if(res && e.getAction() == MotionEvent.ACTION_UP){
+                performClick();
+                float []panPoints = new float[]{-boundary.left-e.getX(), -boundary.top-e.getY()};
+                m.mapPoints(panPoints);
+                panX = panPoints[0];
+                panY = panPoints[1];
+            }
             render();
-            if(res) performClick();
             return res;
         }
         switch(e.getAction()) {
             case MotionEvent.ACTION_MOVE:
                 moveEvent(e);
-                break;
             case MotionEvent.ACTION_DOWN:
                 downEvent(e);
                 break;
@@ -295,20 +300,52 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
             if(boundary.bottom == maxBoundary.bottom || (boundary.bottom > b && b >maxBoundary.bottom))
                 maxBoundary.bottom = b;
         }
-        maxBoundary.left = maxBoundary.left - 1.0f*getWidth();
-        maxBoundary.top = maxBoundary.top - 1.0f*getHeight();
-        maxBoundary.right = maxBoundary.right + 1.0f*getWidth();
-        maxBoundary.bottom = maxBoundary.bottom + 1.0f*getHeight();
+        maxBoundary.left = maxBoundary.left - 2.0f*getWidth();
+        maxBoundary.top = maxBoundary.top - 2.0f*getHeight();
+        maxBoundary.right = maxBoundary.right + 2.0f*getWidth();
+        maxBoundary.bottom = maxBoundary.bottom + 2.0f*getHeight();
         
-        if(maxBoundary.left > boundary.left)
+        
+        boolean updateConstraints = false;
+        
+        if(maxBoundary.left > boundary.left) {
             boundary.left = maxBoundary.left;
-        if(maxBoundary.top > boundary.top)
+            updateConstraints = true;
+        }
+        if(maxBoundary.top > boundary.top) {
             boundary.top = maxBoundary.top;
+            updateConstraints = true;
+        }
         
-        if(maxBoundary.right < boundary.right)
+        if(maxBoundary.right < boundary.right) {
             boundary.right = maxBoundary.right;
-        if(maxBoundary.bottom < boundary.bottom)
+            updateConstraints = true;
+        }
+        if(maxBoundary.bottom < boundary.bottom) {
             boundary.bottom = maxBoundary.bottom;
+            updateConstraints = true;
+        }
+        
+        if(updateConstraints)
+            updateItemContraints();
+    }
+    
+    private void updateItemContraints() {
+        for(Item item : items) {
+            if(maxBoundary.left > item.getX())
+                item.setX(maxBoundary.left);
+            if(maxBoundary.top > item.getY())
+                item.setY(maxBoundary.top);
+            
+            float rightPos = maxBoundary.right - item.getWidth();
+            float bottomPos = maxBoundary.bottom - item.getHeight();
+            if(rightPos < item.getX())
+                item.setX(rightPos);
+            if(bottomPos < item.getY())
+                item.setY(bottomPos);
+            
+            item.applyPos();
+        }
     }
     
     private void render() {
@@ -326,7 +363,7 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
         }
     }
 
-    private void renderItems(Canvas canvas, float realPanX, float realPanY) {
+    private void renderItems(Canvas canvas, float realPanX, float realPanY, boolean isOverview) {
         for (Item item : items) {
             float x = item.getX();
             float y = item.getY();
@@ -336,7 +373,7 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
             item.setRealPos(rx + realPanX, ry + realPanY);
             
             // If the item is outside the screen and the item has news to tell
-            if(item.hasNews() && (x + realPanX + item.getWidth() < 0 || x + realPanX > canvas.getWidth() ||
+            if(item.hasNews() && !isOverview && (x + realPanX + item.getWidth() < 0 || x + realPanX > canvas.getWidth() ||
                     y + realPanY + item.getHeight() < 0 || y + realPanY > canvas.getHeight())) {
                 moa.renderArrow(canvas, item);
             }
@@ -353,7 +390,7 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
         // Compute the scale to choose (this works)
         float scaleX = (float) destinationRect.width() / (float) boundary.width();
         float scaleY = (float) destinationRect.height() / (float) boundary.height();
-        float minScale = Math.min(scaleX, scaleY) * 0.8f;
+        float minScale = Math.min(scaleX, scaleY);// * 0.8f;
 
         // tx, ty should be the translation to take the image back to the screen center
         float tx = Math.max(0, 
@@ -364,11 +401,10 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
         // Middle of the image should be the scale pivot
         m.postTranslate(-boundary.width() / 2f, -boundary.height() / 2f);
         m.postScale(minScale, minScale);
-
         m.postTranslate(tx, ty);
 
         // Static method of doing the above code in this block of code
-        //m.setRectToRect(boundary, destinationRect, Matrix.ScaleToFit.CENTER);
+        m.setRectToRect(boundary, destinationRect, Matrix.ScaleToFit.CENTER);
         canvas.concat(m);
 
     }

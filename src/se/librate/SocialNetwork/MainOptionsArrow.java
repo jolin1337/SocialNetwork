@@ -67,6 +67,8 @@ public class MainOptionsArrow {
             case MotionEvent.ACTION_UP:
                 if(touched && !moved) {
                     toggleOverview();
+                    touched = false;
+                    moved = false;
                     return true;
                 }
                 touched = false;
@@ -80,14 +82,13 @@ public class MainOptionsArrow {
             case MotionEvent.ACTION_DOWN:
                 float xpos = e.getX() - width/2;
                 float ypos = e.getY() - height/2;
-                if(xpos*xpos + ypos*ypos < 50 * 50) {
+                if(xpos*xpos + ypos*ypos < 50 * 50 || isOverview()) {
                     touched = true;
-                    return true;
                 }
-                break;
+                return true;
                 
         }
-        return false;
+        return true;
     }
     
     boolean isOverview() {

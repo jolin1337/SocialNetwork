@@ -2,7 +2,6 @@ package se.librate.SocialNetwork;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.view.DragEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
