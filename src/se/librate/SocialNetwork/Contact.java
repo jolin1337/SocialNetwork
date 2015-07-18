@@ -17,7 +17,7 @@ import android.graphics.RectF;
  *
  * @author jolin1337
  */
-public class Contact extends Item { //Hej
+public class Contact extends Item {
     static public final float width = 100;
     static public final float height = 100;
     static public Bitmap defaultProfileImage;
