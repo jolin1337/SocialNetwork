@@ -61,30 +61,35 @@ public class Contact extends Item {
                 boundary, 
                 rad, rad, Path.Direction.CCW);
         canvas.clipPath(path);
-        int imgWidth = defaultProfileImage.getWidth();
-        int imgHeight = defaultProfileImage.getHeight();
-        if(imgWidth < imgHeight) {
-            float ratio = (float)imgWidth / (float)imgHeight;
-            float boundaryHeight = boundary.bottom - boundary.top;
-            float boundaryOrigWidth = boundary.right - boundary.left;
-            float boundaryWidth = boundaryHeight * ratio;
-            float offs = (boundaryWidth - boundaryOrigWidth)/2;
-            boundary.right = boundary.left + boundaryWidth - offs;
-            boundary.left -= offs;
+        if(defaultProfileImage == null) {
+            canvas.drawCircle(getX() + Contact.width/2, getY() + Contact.height/4, Contact.width, paint);
         }
         else {
-            float ratio = (float)imgHeight / (float)imgWidth;
-            float boundaryWidth = boundary.right - boundary.left;
-            float boundaryOrigHeight = boundary.bottom - boundary.top;
-            float boundaryHeight = boundaryWidth * ratio;
-            float offs = (boundaryHeight - boundaryOrigHeight)/2;
-            boundary.bottom = boundary.top + boundaryHeight - offs;
-            boundary.top -= offs;
+            int imgWidth = defaultProfileImage.getWidth();
+            int imgHeight = defaultProfileImage.getHeight();
+            if(imgWidth < imgHeight) {
+                float ratio = (float)imgWidth / (float)imgHeight;
+                float boundaryHeight = boundary.bottom - boundary.top;
+                float boundaryOrigWidth = boundary.right - boundary.left;
+                float boundaryWidth = boundaryHeight * ratio;
+                float offs = (boundaryWidth - boundaryOrigWidth)/2;
+                boundary.right = boundary.left + boundaryWidth - offs;
+                boundary.left -= offs;
+            }
+            else {
+                float ratio = (float)imgHeight / (float)imgWidth;
+                float boundaryWidth = boundary.right - boundary.left;
+                float boundaryOrigHeight = boundary.bottom - boundary.top;
+                float boundaryHeight = boundaryWidth * ratio;
+                float offs = (boundaryHeight - boundaryOrigHeight)/2;
+                boundary.bottom = boundary.top + boundaryHeight - offs;
+                boundary.top -= offs;
+            }
+            //canvas.drawCircle(getX() + Contact.width/2, getY() + Contact.height/4, Contact.width, paint);
+            canvas.drawBitmap(defaultProfileImage, new Rect(
+                    0, 0, imgWidth, imgHeight
+            ), boundary, paint);
         }
-        //canvas.drawCircle(getX() + Contact.width/2, getY() + Contact.height/4, Contact.width, paint);
-        canvas.drawBitmap(defaultProfileImage, new Rect(
-                0, 0, imgWidth, imgHeight
-        ), boundary, paint);
         //canvas.clipPath(null);
         canvas.restore();
         paint.setColor(Color.BLACK);

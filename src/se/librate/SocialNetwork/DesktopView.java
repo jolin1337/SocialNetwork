@@ -17,6 +17,7 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.widget.EditText;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,7 +27,7 @@ import java.util.List;
  */
 public class DesktopView extends SurfaceView implements View.OnTouchListener {
     List<Item> items = new ArrayList<Item>();
-    MainOptionsArrow moa = new MainOptionsArrow();
+    MainOptionsArrow moa;
     
     RectF boundary = new RectF();
     RectF maxBoundary = new RectF();
@@ -41,6 +42,7 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
     
     Matrix m = new Matrix();
     RectF destinationRect;
+    
     private final SurfaceHolder.Callback callbackHolder = new SurfaceHolder.Callback() {
         @Override
         public void surfaceDestroyed(SurfaceHolder holder) {
@@ -58,6 +60,7 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
 
         @Override
         public void surfaceCreated(SurfaceHolder holder) {
+            moa = new MainOptionsArrow((EditText) DesktopView.this.findViewById(R.id.search_bar));
             destinationRect = new RectF(0,0,0,0);
             destinationRect.right = DesktopView.this.getWidth();
             destinationRect.bottom = DesktopView.this.getHeight();
@@ -89,8 +92,6 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
         desktopViewLoop = new DesktopViewLoop(this);
         holder = getHolder();
         holder.addCallback(callbackHolder);
-        
-        Contact.defaultProfileImage = BitmapFactory.decodeResource(getResources(), R.drawable.profile_image);
         
     }
     public DesktopView(Context context, AttributeSet attrs) {
@@ -154,10 +155,18 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
             boolean res = moa.onTouch(v, e);
             if(res && e.getAction() == MotionEvent.ACTION_UP){
                 performClick();
-                float []panPoints = new float[]{-boundary.left-e.getX(), -boundary.top-e.getY()};
-                m.mapPoints(panPoints);
-                panX = panPoints[0];
-                panY = panPoints[1];
+                
+                // Compute the scale to choose (this works)
+                float scaleX = (float) destinationRect.width() / (float) boundary.width();
+                float scaleY = (float) destinationRect.height() / (float) boundary.height();
+                float minScale = Math.min(scaleX, scaleY);// * 0.8f;
+
+                // tx, ty should be the translation to take th  e image back to the screen center
+                float tx = Math.max(0, minScale * boundary.width() / 2f + 0.5f * (destinationRect.width() - (minScale * boundary.width())));
+                float ty = Math.max(0, minScale * boundary.height() / 2f + 0.5f * (destinationRect.height() - (minScale * boundary.height())));
+
+                panX = -((e.getX() - tx)/minScale + boundary.width() / 2f + boundary.left) + getWidth()/2;
+                panY = -((e.getY() - ty)/minScale + boundary.height() / 2f + boundary.top) + getHeight()/2;
             }
             render();
             return res;
@@ -176,7 +185,7 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
         boolean res = moa.onTouch(v, e);
         render();
         if(res) performClick();
-        return res;
+        return true;
     }
     private void moveEvent(MotionEvent e) {
         if(active != null) {
@@ -187,6 +196,7 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
             if(tmp == null && maxBoundary.contains(active.getRect())) {
                 active.applyPos();
             }
+
             updateBoundaries();
         }
         else {
@@ -216,6 +226,7 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
     }
 
     private void downEvent(MotionEvent e) {
+        if(active != null) return;
         active = findItem(e.getX() - panX, e.getY() - panY);
         startPanX = e.getX();
         startPanY = e.getY();
@@ -224,11 +235,11 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
     private void upEvent(MotionEvent e) {
         if(active != null) {
             Item tmp = findItemExcept(active);
-            if(tmp != null || !maxBoundary.contains(active.getX(), active.getY())) {
-                //active.setPos(oldX, oldY);
-                active.resetPos();
+            if(tmp == null && maxBoundary.contains(active.getRect())) {
+                active.applyPos();
             }
-            else active.applyPos();
+            else 
+                active.resetPos();
             active = null;
         }
 
@@ -364,6 +375,7 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
     }
 
     private void renderItems(Canvas canvas, float realPanX, float realPanY, boolean isOverview) {
+        List<Double> arrowsToRender = new ArrayList<Double>();
         for (Item item : items) {
             float x = item.getX();
             float y = item.getY();
@@ -375,13 +387,16 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
             // If the item is outside the screen and the item has news to tell
             if(item.hasNews() && !isOverview && (x + realPanX + item.getWidth() < 0 || x + realPanX > canvas.getWidth() ||
                     y + realPanY + item.getHeight() < 0 || y + realPanY > canvas.getHeight())) {
-                moa.renderArrow(canvas, item);
+                arrowsToRender.add((Math.atan2((item.getY() + item.getHeight()/2 - getHeight()/2), (item.getX() + item.getWidth()/2 - getWidth()/2))));
             }
             else
                 item.render(canvas);
             item.setPos(x, y);
             item.setRealPos(rx, ry);
         }
+        Double []tmp = new Double[arrowsToRender.size()];
+        tmp = arrowsToRender.toArray(tmp);
+        moa.renderArrows(canvas, tmp);
     }
 
     private void renderOverview(Canvas canvas) {
@@ -393,18 +408,17 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
         float minScale = Math.min(scaleX, scaleY);// * 0.8f;
 
         // tx, ty should be the translation to take the image back to the screen center
-        float tx = Math.max(0, 
-                minScale * boundary.width() / 2f + 0.5f * (destinationRect.width() - (minScale * boundary.width())));
-        float ty = Math.max(0, 
-                minScale * boundary.height() / 2f + 0.5f * (destinationRect.height() - (minScale * boundary.height())));
+        float tx = Math.max(0, minScale * boundary.width() / 2f + 0.5f * (destinationRect.width() - (minScale * boundary.width())));
+        float ty = Math.max(0, minScale * boundary.height() / 2f + 0.5f * (destinationRect.height() - (minScale * boundary.height())));
 
         // Middle of the image should be the scale pivot
+        m.postTranslate(-boundary.left, -boundary.top);
         m.postTranslate(-boundary.width() / 2f, -boundary.height() / 2f);
         m.postScale(minScale, minScale);
         m.postTranslate(tx, ty);
 
         // Static method of doing the above code in this block of code
-        m.setRectToRect(boundary, destinationRect, Matrix.ScaleToFit.CENTER);
+        //m.setRectToRect(boundary, destinationRect, Matrix.ScaleToFit.CENTER);
         canvas.concat(m);
 
     }

@@ -49,8 +49,9 @@ public abstract class Item {
     }
     
     public boolean isColliding(Item item) {
-        return (item.getX() <= x + width && item.getX() + item.getWidth() >= x
-                && item.getY() <= y + height && item.getY() + item.getHeight() >= y);
+        return getRect().intersects(item.getX(), item.getY(), item.getX()+item.getWidth(), item.getY()+item.getHeight());
+//        return (item.getX() <= x + width && item.getX() + item.getWidth() >= x
+//                && item.getY() <= y + height && item.getY() + item.getHeight() >= y);
     }
     public boolean isColliding(float x, float y) {
         return x > this.x && this.x + width > x && y > this.y && this.y + height > y;

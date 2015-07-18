@@ -1,10 +1,10 @@
 package se.librate.SocialNetwork;
 
 import android.app.Activity;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
-import android.view.MotionEvent;
-import android.view.View;
 import android.view.Window;
+import android.widget.EditText;
 
 public class DesktopActivity extends Activity {
     DesktopView dv;
@@ -14,16 +14,10 @@ public class DesktopActivity extends Activity {
     {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
+        Contact.defaultProfileImage = BitmapFactory.decodeResource(this.getResources(), R.drawable.profile_image);
         dv = new DesktopView(this);
-        dv.setOnTouchListener(new View.OnTouchListener() {
-
-            public boolean onTouch(View v, MotionEvent event) {
-                return true;
-                //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-            }
-        });
-        setContentView(dv);
-        //setContentView(R.layout.main);
+        //setContentView(dv);
+        setContentView(R.layout.main);
     }
     @Override
     protected void onResume() {
