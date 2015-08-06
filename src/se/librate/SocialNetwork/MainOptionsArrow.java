@@ -140,21 +140,29 @@ public class MainOptionsArrow {
     }
     void showOverview() {
         exp = true;
-        if(et != null) 
-            et.setVisibility(View.GONE);
+        if(et != null) {
+            et.setVisibility(View.VISIBLE);
+            et.setEnabled(true);
+        }
     }
     void hideOverview() {
         exp = false;
-        if(et != null) 
-            et.setVisibility(View.VISIBLE);
+        if(et != null) {
+            et.setVisibility(View.GONE);
+            et.setEnabled(false);
+        }
     }
     void toggleOverview() {
         exp = !exp;
         if(et != null) {
-            if(exp)
-                et.setVisibility(View.GONE);
-            else
+            if(exp) {
                 et.setVisibility(View.VISIBLE);
+                et.setEnabled(true);
+            }
+            else {
+                et.setVisibility(View.GONE);
+                et.setEnabled(false);
+            }
         }
     }
 

@@ -4,6 +4,11 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     >
+<Button 
+    android:visibility="gone" 
+    android:layout_width="wrap_content" 
+    android:layout_height="wrap_content" >
+</Button>
 <EditText
     android:id="@+id/search_bar"
     android:layout_width="fill_parent"
@@ -13,6 +18,8 @@
     android:visibility="gone"
     />
 <se.librate.SocialNetwork.DesktopView 
+    android:focusable="true"
+    android:id="@+id/desktop"
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"/>

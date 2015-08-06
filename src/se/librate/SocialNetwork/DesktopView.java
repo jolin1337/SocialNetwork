@@ -6,18 +6,24 @@
 package se.librate.SocialNetwork;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.os.Bundle;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewGroup.LayoutParams;
+import android.view.WindowManager;
 import android.widget.EditText;
+import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,6 +48,7 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
     
     Matrix m = new Matrix();
     RectF destinationRect;
+    Context ctx;
     
     private final SurfaceHolder.Callback callbackHolder = new SurfaceHolder.Callback() {
         @Override
@@ -60,18 +67,12 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
 
         @Override
         public void surfaceCreated(SurfaceHolder holder) {
-            moa = new MainOptionsArrow((EditText) DesktopView.this.findViewById(R.id.search_bar));
             destinationRect = new RectF(0,0,0,0);
             destinationRect.right = DesktopView.this.getWidth();
             destinationRect.bottom = DesktopView.this.getHeight();
             setOnTouchListener(DesktopView.this); 
             //setOnClickListener(DesktopView.this);
             //setOnDragListener(DesktopView.this);
-            
-            items.add(new Contact(1, 20, 10));
-            items.add(new Contact(2, 200, 300));
-            items.add(new Contact("Bertil", 3, 10, 250));
-            items.add(new Contact(4, 170, 400));
             updateBoundaries();
 
             render();
@@ -84,25 +85,47 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
                       int width, int height) {
             destinationRect.right = width;
             destinationRect.bottom = height;
+            render();
         }
     };
     
     public DesktopView(Context context) {
         super(context);
+        moa = new MainOptionsArrow((EditText) findViewById(R.id.search_bar));
+        ctx = context;
         desktopViewLoop = new DesktopViewLoop(this);
+            
+        items.add(new Contact(1, 20, 10));
+        items.add(new Contact(2, 200, 300));
+        items.add(new Contact("Bertil", 3, 10, 250));
+        items.add(new Contact(4, 170, 400));
         holder = getHolder();
         holder.addCallback(callbackHolder);
         
     }
     public DesktopView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        moa = new MainOptionsArrow((EditText) findViewById(R.id.search_bar));
+        ctx = context;
         desktopViewLoop = new DesktopViewLoop(this);
+        
+        items.add(new Contact(1, 20, 10));
+        items.add(new Contact(2, 200, 300));
+        items.add(new Contact("Bertil", 3, 10, 250));
+        items.add(new Contact(4, 170, 400));
         holder = getHolder();
         holder.addCallback(callbackHolder);
     }
     public DesktopView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+        moa = new MainOptionsArrow((EditText) findViewById(R.id.search_bar));
+        ctx = context;
         desktopViewLoop = new DesktopViewLoop(this);
+        
+        items.add(new Contact(1, 20, 10));
+        items.add(new Contact(2, 200, 300));
+        items.add(new Contact("Bertil", 3, 10, 250));
+        items.add(new Contact(4, 170, 400));
         holder = getHolder();
         holder.addCallback(callbackHolder);
     }
@@ -171,6 +194,7 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
             render();
             return res;
         }
+        else if(requestFocus());
         switch(e.getAction()) {
             case MotionEvent.ACTION_MOVE:
                 moveEvent(e);
@@ -234,6 +258,11 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
 
     private void upEvent(MotionEvent e) {
         if(active != null) {
+            if(Math.abs(e.getX() - startPanX) < 3 && Math.abs(e.getY() - startPanY) < 3) {
+                Intent in = new Intent(ctx, ChatActivity.class);
+                ctx.startActivity(in);
+                Toast.makeText(ctx, "Clicked a contact", Toast.LENGTH_LONG);
+            }
             Item tmp = findItemExcept(active);
             if(tmp == null && maxBoundary.contains(active.getRect())) {
                 active.applyPos();
@@ -457,5 +486,9 @@ public class DesktopView extends SurfaceView implements View.OnTouchListener {
         
         
     }*/
+
+    void setSearchBar(EditText et) {
+        moa.et = et;
+    }
 
 }

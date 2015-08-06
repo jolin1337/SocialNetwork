@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">DesktopActivity</string>
+    <string name="app_name">Social Network</string>
     <string name="search_hint">Type here</string>
+    <color name="red">#FF0000</color>
+    <color name="blue">#0000FF</color>
 </resources>
